@@ -55,6 +55,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _fast_decode_png(data: bytes) -> 'Image.Image':
+    try:
+        from torchvision.io import decode_png
+        from torchvision.transforms.functional import to_pil_image
+        buf = torch.frombuffer(bytearray(data), dtype=torch.uint8)
+        return to_pil_image(decode_png(buf))
+    except Exception:
+        return Image.open(io.BytesIO(data))
+
+
 class DefaultAugmenter():
     def __init__(self):
         self._blur = v2.RandomChoice([
@@ -267,7 +277,7 @@ class ArrowIPCRecognitionDataset(Dataset):
         try:
             sample = self.arrow_table.column('lines')[index].as_py()
             logger.debug(f'Loading sample {index}')
-            im = Image.open(io.BytesIO(sample['im']))
+            im = _fast_decode_png(sample['im'])
             im = self.transforms(im)
             if self.aug:
                 im = self.aug(image=im, index=index)
