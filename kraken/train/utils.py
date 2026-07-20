@@ -23,6 +23,7 @@ from os import path
 
 from collections import Counter
 from dataclasses import dataclass
+import torch
 from torch.optim import lr_scheduler
 from typing import TYPE_CHECKING, Optional, Union
 from lightning.pytorch.callbacks import (BaseFinetuning, Callback,
@@ -114,6 +115,14 @@ class KrakenTrainer(L.Trainer):
                  log_dir: Optional['PathLike'] = None,
                  *args,
                  **kwargs):
+        # Enable Tensor Cores for float32 matmuls on Ampere+ GPUs. This is
+        # PyTorch's recommended default for mixed-precision training and
+        # silences the recurring "To properly utilize them, you should set
+        # torch.set_float32_matmul_precision('medium' | 'high')" warning that
+        # Lightning surfaces on every CUDA run. 'high' uses bfloat16 internally
+        # for the matmul accumulator; the visible dtype and gradients remain
+        # float32, so this does not change numerics from the user's view.
+        torch.set_float32_matmul_precision('high')
         kwargs['enable_progress_bar'] = enable_progress_bar
         kwargs['min_epochs'] = min_epochs
         kwargs['max_epochs'] = max_epochs
