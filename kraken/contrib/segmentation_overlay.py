@@ -117,7 +117,17 @@ def cli(model, text_direction, repolygonize, topline, height_scale, files):
                 base_image.save(f'high_{os.path.basename(doc)}_regions_{slugify(t)}.png')
             click.secho('\u2713', fg='green')
     else:
-        net = vgsl.TorchVGSLModel.load_model(model)
+        try:
+            net = vgsl.TorchVGSLModel.load_model(model)
+        except Exception:
+            # safetensors files can't be loaded via protobuf; use load_models
+            from kraken.models import load_models
+            net = load_models(model)[0]
+        # ensure metadata fields that blla.segment() expects are present
+        if 'hyper_params' not in net.user_metadata:
+            net.user_metadata['hyper_params'] = {'padding': (0, 0)}
+        if 'bounding_regions' not in net.user_metadata:
+            net.user_metadata['bounding_regions'] = []
         for doc in files:
             click.echo(f'Processing {doc} ', nl=False)
             im = open_image(doc)
@@ -125,7 +135,10 @@ def cli(model, text_direction, repolygonize, topline, height_scale, files):
             # reorder lines by type
             lines = defaultdict(list)
             for line in res.lines:
-                lines[line.tags['type']].append(line)
+                # tags['type'] may be a str or a list of {'type': str} dicts
+                t = line.tags['type']
+                t = t[0]['type'] if isinstance(t, list) else t
+                lines[t].append(line)
             im = im.convert('RGBA')
             for t, ls in lines.items():
                 tmp = Image.new('RGBA', im.size, (0, 0, 0, 0))
