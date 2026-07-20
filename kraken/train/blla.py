@@ -199,28 +199,37 @@ class BLLASegmentationDataModule(L.LightningDataModule):
                 raise ValueError('No valid test data provided. Please add some.')
 
     def train_dataloader(self):
+        num_workers = self.hparams.data_config.num_workers
         return DataLoader(self.train_set,
                           batch_size=1,
-                          num_workers=self.hparams.data_config.num_workers,
+                          num_workers=num_workers,
                           shuffle=True,
                           pin_memory=True,
-                          collate_fn=_seg_collate_fn)
+                          collate_fn=_seg_collate_fn,
+                          persistent_workers=num_workers > 0,
+                          prefetch_factor=4 if num_workers > 0 else None)
 
     def val_dataloader(self):
+        num_workers = self.hparams.data_config.num_workers
         return DataLoader(self.val_set,
                           shuffle=False,
                           batch_size=1,
-                          num_workers=self.hparams.data_config.num_workers,
+                          num_workers=num_workers,
                           pin_memory=True,
-                          collate_fn=_seg_collate_fn)
+                          collate_fn=_seg_collate_fn,
+                          persistent_workers=num_workers > 0,
+                          prefetch_factor=4 if num_workers > 0 else None)
 
     def test_dataloader(self):
+        num_workers = self.hparams.data_config.num_workers
         return DataLoader(self.test_set,
                           shuffle=False,
                           batch_size=1,
-                          num_workers=self.hparams.data_config.num_workers,
+                          num_workers=num_workers,
                           pin_memory=True,
-                          collate_fn=_seg_collate_fn)
+                          collate_fn=_seg_collate_fn,
+                          persistent_workers=num_workers > 0,
+                          prefetch_factor=4 if num_workers > 0 else None)
 
 
 class BLLASegmentationModel(KrakenTrainerModule):

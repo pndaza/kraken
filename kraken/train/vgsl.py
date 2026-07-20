@@ -249,30 +249,39 @@ class VGSLRecognitionDataModule(L.LightningDataModule):
             self.test_set.dataset.no_encode()
 
     def train_dataloader(self):
+        num_workers = self.hparams.data_config.num_workers
         return DataLoader(self.train_set,
                           batch_size=self.trainer.lightning_module.hparams.config.batch_size,
-                          num_workers=self.hparams.data_config.num_workers,
+                          num_workers=num_workers,
                           pin_memory=True,
                           shuffle=True,
-                          collate_fn=collate_sequences)
+                          collate_fn=collate_sequences,
+                          persistent_workers=num_workers > 0,
+                          prefetch_factor=4 if num_workers > 0 else None)
 
     def val_dataloader(self):
+        num_workers = self.hparams.data_config.num_workers
         return DataLoader(self.val_set,
                           shuffle=False,
                           batch_size=self.trainer.lightning_module.hparams.config.batch_size,
-                          num_workers=self.hparams.data_config.num_workers,
+                          num_workers=num_workers,
                           pin_memory=True,
                           collate_fn=collate_sequences,
-                          worker_init_fn=validation_worker_init_fn)
+                          worker_init_fn=validation_worker_init_fn,
+                          persistent_workers=num_workers > 0,
+                          prefetch_factor=4 if num_workers > 0 else None)
 
     def test_dataloader(self):
+        num_workers = self.hparams.data_config.num_workers
         return DataLoader(self.test_set,
                           shuffle=False,
                           batch_size=self.trainer.lightning_module.hparams.config.batch_size,
-                          num_workers=self.hparams.data_config.num_workers,
+                          num_workers=num_workers,
                           pin_memory=True,
                           collate_fn=collate_sequences,
-                          worker_init_fn=validation_worker_init_fn)
+                          worker_init_fn=validation_worker_init_fn,
+                          persistent_workers=num_workers > 0,
+                          prefetch_factor=4 if num_workers > 0 else None)
 
 
 class VGSLRecognitionModel(KrakenTrainerModule):
