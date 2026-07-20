@@ -24,7 +24,7 @@ import logging
 from PIL import Image
 
 from pathlib import Path
-from kraken.ketos.util import _expand_gt, _validate_manifests, message, _create_class_map
+from kraken.ketos.util import _expand_gt, _validate_manifests, message, _create_class_map, build_distributed_strategy_kwargs
 
 from kraken.registry import OPTIMIZERS, SCHEDULERS, STOPPERS
 
@@ -230,7 +230,8 @@ def rotrain(ctx, **kwargs):
                             callbacks=cbs,
                             gradient_clip_val=params['gradient_clip_val'],
                             num_sanity_val_steps=0,
-                            **val_check_interval)
+                            **val_check_interval,
+                            **build_distributed_strategy_kwargs(ctx.meta['device'], ctx.meta['ddp_timeout']))
 
     with trainer.init_module(empty_init=False if (load or resume) else True):
         if load:

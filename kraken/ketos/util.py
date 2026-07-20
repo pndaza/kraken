@@ -173,3 +173,22 @@ def to_ptl_device(device: str) -> tuple[str, Optional[list[int]]]:
             dev = 'gpu'
         return dev, [int(x[1]) for x in devices]
     raise Exception(f'Invalid device {device} specified')
+
+
+def build_distributed_strategy_kwargs(devices, timeout_seconds: Optional[float]) -> dict:
+    """Return ``{'strategy': DDPStrategy(...)}`` for multi-device runs, else ``{}``.
+
+    Lightning's default DDPStrategy timeout is 1800 seconds. On large binary
+    datasets each rank independently reloads the data, which can take longer
+    than that and crash the rendezvous with ``DistStoreError: Timed out after
+    1801 seconds waiting for clients``.
+
+    This helper is a no-op for single-device / CPU runs so existing behavior
+    is unchanged. The returned dict is meant to be splatted into
+    ``KrakenTrainer(...)`` alongside the other trainer kwargs.
+    """
+    if isinstance(devices, list) and len(devices) > 1 and timeout_seconds:
+        from datetime import timedelta
+        from lightning.pytorch.strategies import DDPStrategy
+        return {'strategy': DDPStrategy(timeout=timedelta(seconds=timeout_seconds))}
+    return {}

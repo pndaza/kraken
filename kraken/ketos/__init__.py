@@ -68,6 +68,15 @@ Image.MAX_IMAGE_PIXELS = 20000 ** 2
 @click.option('--precision',
               type=click.Choice(PRECISIONS),
               help='Numerical precision to use for training. Default is 32-bit single-point precision.')
+@click.option('--ddp-timeout',
+              type=click.FLOAT,
+              default=1800.0,
+              show_default=True,
+              help='Timeout in seconds for the DDP process group rendezvous and '
+                   'collective operations. Only relevant for multi-device runs. '
+                   'Raise this if a large dataset causes the per-rank data load '
+                   'to exceed the default (e.g. when each rank re-loads a binary '
+                   'arrow file).')
 @click.option('--workers', 'num_workers', type=click.IntRange(0), help='Number of data loading worker processes.')
 @click.option('--threads', 'num_threads', type=click.IntRange(1), help='Maximum size of OpenMP/BLAS thread pool.')
 @click.option('-s', '--seed', default=None, type=click.INT,
@@ -102,6 +111,7 @@ def cli(ctx, **kwargs):
     ctx.meta['precision'] = params.get('precision')
     ctx.meta['num_workers'] = params.get('num_workers')
     ctx.meta['num_threads'] = params.get('num_threads')
+    ctx.meta['ddp_timeout'] = params.get('ddp_timeout')
 
     log.set_logger(logger, level=30 - min(10 * params['verbose'], 20))
 
