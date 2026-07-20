@@ -590,6 +590,17 @@ class BLLASegmentationModel(KrakenTrainerModule):
                    False: 'baseline'}
 
             topline = self.trainer.datamodule.hparams.data_config.topline
+            # click's flag_value=False may pass the string 'False' instead of
+            # the boolean False when multiple options share the same destination.
+            # Normalize string representations back to their proper types.
+            if isinstance(topline, str):
+                if topline == 'False':
+                    topline = False
+                elif topline == 'True':
+                    topline = True
+                elif topline == 'None':
+                    topline = None
+                self.trainer.datamodule.hparams.data_config.topline = topline
             if topline != (from_loc := self.net.user_metadata.get('topline', 'unset')):
                 logger.warning(f'Changing baseline location from {from_loc} to {loc[topline]}.')
             self.net.user_metadata['topline'] = topline
